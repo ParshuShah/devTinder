@@ -4,15 +4,12 @@ const app = express();
 const port = 4444;
 const User = require("./models/User");
 
+app.use(express.json());
+
 //making an API to add the data into the DB.
 app.post("/signup", async (req, res)=>{
     //Creating a new Instance of the User Model
-    const user = new User({
-        firstName : "virat",
-        lastName : "Kohli",
-        emailId : "virat@kohli.com",
-        password : "virat123",
-    });
+    const user = new User(req.body);
 
    try{ 
     await user.save();
