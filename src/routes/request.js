@@ -5,6 +5,8 @@ const userAuth = require("../middlewares/auth");
 const User = require("../models/User.js");
 const ConnectionRequest = require("../models/connectionRequest.js")
 
+
+//(API to send) Interested or Ignored 
 requestRouter.post(
     "/request/send/:status/:toUserId",
     userAuth,
@@ -44,19 +46,54 @@ requestRouter.post(
           status,
         });
   
-        const data = await connectionRequest.save();
+      const data = await connectionRequest.save();
   
-        // const emailRes = await sendEmail.run(
-        //   "A new friend request from " + req.user.firstName,
-        //   req.user.firstName + " is " + status + " in " + toUser.firstName
-        // );
-        // console.log(emailRes);
+      // const emailRes = await sendEmail.run(
+      //   "A new friend request from " + req.user.firstName,
+      //   req.user.firstName + " is " + status + " in " + toUser.firstName
+      // );
+      // console.log(emailRes);
   
-        res.json({
-          message:
-            req.user.firstName + " is " + status + " in " + toUser.firstName,
+      res.json({
+        message:
+          req.user.firstName + " is " + status + " in " + toUser.firstName,
           data,
         });
+      } catch (err) {
+        res.status(400).send("ERROR: " + err.message);
+      }
+    }
+  );
+ // API to review the request(accepted or rejected )
+  requestRouter.post(
+    "/request/review/:status/:requestId",
+    userAuth,
+    async (req, res) => {
+      try {
+        const loggedInUser = req.user; 
+        const { status, requestId } = req.params;
+  
+        const allowedStatus = ["accepted", "rejected"];
+        if (!allowedStatus.includes(status)) {
+          return res.status(400).json({ messaage: "Status not allowed!" });
+        }
+  
+        const connectionRequest = await ConnectionRequest.findOne({
+          _id: requestId,
+          toUserId: loggedInUser._id,  //here we are suring that this only works for loggedin user
+          status: "interested",   //Only for the interested ones 
+        });
+        if (!connectionRequest) {
+          return res
+            .status(404)
+            .json({ message: "Connection request not found" });
+        }
+  
+        connectionRequest.status = status;
+  
+        const data = await connectionRequest.save();
+  
+        res.json({ message: "Connection request " + status, data });
       } catch (err) {
         res.status(400).send("ERROR: " + err.message);
       }
